@@ -3,48 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Battle Royale Mobile Game</title>
+<title>3D Shooter Game</title>
 
 <style>
 
 body{
     margin:0;
     overflow:hidden;
-    background:#111;
-    font-family:Arial;
+    background:black;
 }
 
-canvas{
-    display:block;
-    background:#1b1b1b;
-} 
-
-#score{
+#info{
     position:absolute;
     top:10px;
     left:10px;
     color:white;
     font-size:22px;
     z-index:10;
-}
-
-#gameover{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    color:white;
-    text-align:center;
-    display:none;
-}
-
-button{
-    padding:12px 25px;
-    border:none;
-    border-radius:10px;
-    background:#00ff99;
-    font-size:18px;
-    font-weight:bold;
+    font-family:Arial;
 }
 
 </style>
@@ -52,143 +28,180 @@ button{
 
 <body>
 
-<div id="score">Kills: 0</div>
+<div id="info">Kills: 0</div>
 
-<div id="gameover">
-    <h1>Game Over</h1>
-    <button onclick="location.reload()">Restart</button>
-</div>
-
-<canvas id="game"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 
 <script>
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+let scene = new THREE.Scene();
 
-canvas.width = innerWidth;
-canvas.height = innerHeight;
+scene.background = new THREE.Color(0x111111);
+
+let camera = new THREE.PerspectiveCamera(
+75,
+window.innerWidth/window.innerHeight,
+0.1,
+1000
+);
+
+let renderer = new THREE.WebGLRenderer({antialias:true});
+
+renderer.setSize(window.innerWidth,window.innerHeight);
+
+document.body.appendChild(renderer.domElement);
+
+/* Light */
+
+let light = new THREE.DirectionalLight(0xffffff,1);
+
+light.position.set(5,10,7);
+
+scene.add(light);
+
+/* Ground */
+
+let groundGeo = new THREE.PlaneGeometry(100,100);
+
+let groundMat = new THREE.MeshStandardMaterial({
+color:0x222222
+});
+
+let ground = new THREE.Mesh(groundGeo,groundMat);
+
+ground.rotation.x = -Math.PI/2;
+
+scene.add(ground);
+
+/* Player */
+
+let playerGeo = new THREE.BoxGeometry(1,1,1);
+
+let playerMat = new THREE.MeshStandardMaterial({
+color:0x00ffcc
+});
+
+let player = new THREE.Mesh(playerGeo,playerMat);
+
+player.position.y = 0.5;
+
+scene.add(player);
+
+camera.position.set(0,5,8);
+
+camera.lookAt(player.position);
+
+/* Bullets */
+
+let bullets = [];
+
+/* Enemies */
+
+let enemies = [];
 
 let kills = 0;
 
-const player = {
-    x: canvas.width/2,
-    y: canvas.height/2,
-    size: 22,
-    color:"#00ff99",
-    speed:5,
-    health:100
-};
+function createEnemy(){
 
-let bullets = [];
-let enemies = [];
+    let geo = new THREE.BoxGeometry(1,1,1);
 
-function drawPlayer(){
+    let mat = new THREE.MeshStandardMaterial({
+        color:0xff0000
+    });
 
-    ctx.fillStyle = player.color;
+    let enemy = new THREE.Mesh(geo,mat);
 
-    ctx.beginPath();
-    ctx.arc(player.x,player.y,player.size,0,Math.PI*2);
-    ctx.fill();
+    enemy.position.set(
+        (Math.random()-0.5)*20,
+        0.5,
+        -20
+    );
+
+    scene.add(enemy);
+
+    enemies.push(enemy);
 
 }
 
-function drawBullets(){
+setInterval(createEnemy,1500);
 
-    ctx.fillStyle = "yellow";
+/* Shoot */
 
-    bullets.forEach((b,i)=>{
+window.addEventListener("click",()=>{
 
-        b.x += b.dx;
-        b.y += b.dy;
+    let geo = new THREE.SphereGeometry(0.2);
 
-        ctx.fillRect(b.x,b.y,8,8);
+    let mat = new THREE.MeshBasicMaterial({
+        color:0xffff00
+    });
 
-        if(
-            b.x < 0 ||
-            b.x > canvas.width ||
-            b.y < 0 ||
-            b.y > canvas.height
-        ){
-            bullets.splice(i,1);
+    let bullet = new THREE.Mesh(geo,mat);
+
+    bullet.position.copy(player.position);
+
+    scene.add(bullet);
+
+    bullets.push(bullet);
+
+});
+
+/* Controls */
+
+window.addEventListener("touchmove",(e)=>{
+
+    let x = (e.touches[0].clientX/window.innerWidth - 0.5)*20;
+
+    player.position.x = x;
+
+});
+
+/* Animate */
+
+function animate(){
+
+    requestAnimationFrame(animate);
+
+    bullets.forEach((b,bi)=>{
+
+        b.position.z -= 0.7;
+
+        if(b.position.z < -50){
+
+            scene.remove(b);
+
+            bullets.splice(bi,1);
+
         }
 
     });
 
-}
-
-function spawnEnemy(){
-
-    let side = Math.floor(Math.random()*4);
-
-    let x,y;
-
-    if(side===0){
-        x=0;
-        y=Math.random()*canvas.height;
-    }
-
-    if(side===1){
-        x=canvas.width;
-        y=Math.random()*canvas.height;
-    }
-
-    if(side===2){
-        x=Math.random()*canvas.width;
-        y=0;
-    }
-
-    if(side===3){
-        x=Math.random()*canvas.width;
-        y=canvas.height;
-    }
-
-    enemies.push({
-        x,
-        y,
-        size:20,
-        speed:1.5 + Math.random()*2
-    });
-
-}
-
-setInterval(spawnEnemy,1000);
-
-function drawEnemies(){
-
-    ctx.fillStyle = "red";
-
     enemies.forEach((e,ei)=>{
 
-        let angle = Math.atan2(player.y-e.y, player.x-e.x);
+        e.position.z += 0.05;
 
-        e.x += Math.cos(angle)*e.speed;
-        e.y += Math.sin(angle)*e.speed;
+        if(e.position.z > 5){
 
-        ctx.beginPath();
-        ctx.arc(e.x,e.y,e.size,0,Math.PI*2);
-        ctx.fill();
+            alert("Game Over");
 
-        let distPlayer = Math.hypot(player.x-e.x, player.y-e.y);
-
-        if(distPlayer < player.size + e.size){
-
-            document.getElementById("gameover").style.display="block";
+            location.reload();
 
         }
 
         bullets.forEach((b,bi)=>{
 
-            let dist = Math.hypot(b.x-e.x, b.y-e.y);
+            let dist = b.position.distanceTo(e.position);
 
-            if(dist < e.size){
+            if(dist < 1){
+
+                scene.remove(e);
+                scene.remove(b);
 
                 enemies.splice(ei,1);
                 bullets.splice(bi,1);
 
                 kills++;
 
-                document.getElementById("score").innerText =
+                document.getElementById("info").innerText =
                 "Kills: " + kills;
 
             }
@@ -197,47 +210,11 @@ function drawEnemies(){
 
     });
 
-}
-
-function animate(){
-
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    drawPlayer();
-    drawBullets();
-    drawEnemies();
-
-    requestAnimationFrame(animate);
+    renderer.render(scene,camera);
 
 }
 
 animate();
-
-canvas.addEventListener("touchmove",(e)=>{
-
-    player.x = e.touches[0].clientX;
-    player.y = e.touches[0].clientY;
-
-});
-
-canvas.addEventListener("touchstart",(e)=>{
-
-    let touchX = e.touches[0].clientX;
-    let touchY = e.touches[0].clientY;
-
-    let angle = Math.atan2(
-        touchY-player.y,
-        touchX-player.x
-    );
-
-    bullets.push({
-        x:player.x,
-        y:player.y,
-        dx:Math.cos(angle)*8,
-        dy:Math.sin(angle)*8
-    });
-
-});
 
 </script>
 
