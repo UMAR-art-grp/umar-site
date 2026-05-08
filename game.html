@@ -3,230 +3,196 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HD Battle Shooter</title>
-
+<title>Car For Sale Game</title>
 <style>
-
 body{
     margin:0;
+    font-family:Arial,sans-serif;
+    background:#111827;
+    color:white;
     overflow:hidden;
-    background:black;
 }
 
-canvas{
-    display:block;
+header{
+    background:#0f172a;
+    padding:15px;
+    text-align:center;
+    font-size:28px;
+    font-weight:bold;
+    color:#00ffd5;
 }
 
-#hud{
+#money{
     position:absolute;
-    top:10px;
-    left:10px;
-    color:white;
-    font-family:Arial;
+    top:70px;
+    left:20px;
+    font-size:24px;
+    background:#1e293b;
+    padding:10px 20px;
+    border-radius:12px;
+}
+
+.game{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:25px;
+    flex-wrap:wrap;
+    margin-top:120px;
+}
+
+.card{
+    width:260px;
+    background:#1e293b;
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:0 0 20px rgba(0,255,213,0.2);
+    transition:0.3s;
+}
+
+.card:hover{
+    transform:translateY(-10px);
+}
+
+.card img{
+    width:100%;
+    height:180px;
+    object-fit:cover;
+}
+
+.card-content{
+    padding:20px;
+}
+
+.card h2{
+    margin:0;
+    color:#00ffd5;
+}
+
+.price{
+    margin:10px 0;
     font-size:22px;
-    z-index:10;
+    font-weight:bold;
 }
 
-#crosshair{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    color:white;
-    font-size:40px;
-    z-index:10;
+button{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:12px;
+    background:#00ffd5;
+    color:black;
+    font-weight:bold;
+    cursor:pointer;
+    font-size:16px;
 }
 
+button:hover{
+    background:white;
+}
+
+#garage{
+    position:fixed;
+    bottom:0;
+    width:100%;
+    background:#0f172a;
+    padding:15px;
+}
+
+#garage h3{
+    margin:0 0 10px;
+    color:#00ffd5;
+}
+
+#carsOwned{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.carTag{
+    background:#1e293b;
+    padding:8px 15px;
+    border-radius:10px;
+}
 </style>
 </head>
-
 <body>
 
-<div id="hud">Kills: 0</div>
-<div id="crosshair">+</div>
+<header>PC Car For Sale Game</header>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<div id="money">Money: $50000</div>
+
+<div class="game">
+
+<div class="card">
+<img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=1200">
+<div class="card-content">
+<h2>BMW M4</h2>
+<div class="price">$15000</div>
+<button onclick="buyCar('BMW M4',15000)">Buy Car</button>
+</div>
+</div>
+
+<div class="card">
+<img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200">
+<div class="card-content">
+<h2>Lamborghini</h2>
+<div class="price">$30000</div>
+<button onclick="buyCar('Lamborghini',30000)">Buy Car</button>
+</div>
+</div>
+
+<div class="card">
+<img src="https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1200">
+<div class="card-content">
+<h2>Porsche 911</h2>
+<div class="price">$25000</div>
+<button onclick="buyCar('Porsche 911',25000)">Buy Car</button>
+</div>
+</div>
+
+</div>
+
+<div id="garage">
+<h3>Your Garage</h3>
+<div id="carsOwned"></div>
+</div>
 
 <script>
 
-const scene = new THREE.Scene();
+let money = 50000;
+let ownedCars = [];
 
-scene.background = new THREE.Color(0x101820);
-
-const camera = new THREE.PerspectiveCamera(
-75,
-window.innerWidth/window.innerHeight,
-0.1,
-1000
-);
-
-const renderer = new THREE.WebGLRenderer({antialias:true});
-
-renderer.setSize(window.innerWidth,window.innerHeight);
-
-renderer.shadowMap.enabled = true;
-
-document.body.appendChild(renderer.domElement);
-
-/* Lights */
-
-const light = new THREE.DirectionalLight(0xffffff,2);
-
-light.position.set(10,20,10);
-
-scene.add(light);
-
-const ambient = new THREE.AmbientLight(0xffffff,0.5);
-
-scene.add(ambient);
-
-/* Floor */
-
-const floorGeo = new THREE.PlaneGeometry(200,200);
-
-const floorMat = new THREE.MeshStandardMaterial({
-color:0x222222
-});
-
-const floor = new THREE.Mesh(floorGeo,floorMat);
-
-floor.rotation.x = -Math.PI/2;
-
-scene.add(floor);
-
-/* Player */
-
-camera.position.set(0,2,8);
-
-/* Enemies */
-
-let enemies = [];
-
-let bullets = [];
-
-let kills = 0;
-
-function createEnemy(){
-
-    const geo = new THREE.BoxGeometry(2,2,2);
-
-    const mat = new THREE.MeshStandardMaterial({
-        color:0xff0000
-    });
-
-    const enemy = new THREE.Mesh(geo,mat);
-
-    enemy.position.set(
-        (Math.random()-0.5)*30,
-        1,
-        -50
-    );
-
-    scene.add(enemy);
-
-    enemies.push(enemy);
-
+function updateMoney(){
+    document.getElementById('money').innerText = 'Money: $' + money;
 }
 
-setInterval(createEnemy,1200);
+function buyCar(name, price){
 
-/* Shoot */
+    if(money >= price){
 
-window.addEventListener("click",()=>{
+        money -= price;
 
-    const geo = new THREE.SphereGeometry(0.25,32,32);
+        ownedCars.push(name);
 
-    const mat = new THREE.MeshBasicMaterial({
-        color:0xffff00
-    });
+        updateMoney();
 
-    const bullet = new THREE.Mesh(geo,mat);
+        let tag = document.createElement('div');
+        tag.className = 'carTag';
+        tag.innerText = name;
 
-    bullet.position.set(0,2,8);
+        document.getElementById('carsOwned').appendChild(tag);
 
-    scene.add(bullet);
+        alert(name + ' Purchased Successfully!');
 
-    bullets.push(bullet);
+    }else{
 
-});
+        alert('Not enough money!');
 
-/* Touch movement */
-
-window.addEventListener("touchmove",(e)=>{
-
-    let moveX =
-    (e.touches[0].clientX/window.innerWidth - 0.5)*20;
-
-    camera.position.x = moveX;
-
-});
-
-/* Animate */
-
-function animate(){
-
-    requestAnimationFrame(animate);
-
-    bullets.forEach((b,bi)=>{
-
-        b.position.z -= 1.5;
-
-        if(b.position.z < -100){
-
-            scene.remove(b);
-
-            bullets.splice(bi,1);
-
-        }
-
-    });
-
-    enemies.forEach((e,ei)=>{
-
-        e.position.z += 0.08;
-
-        e.rotation.x += 0.01;
-
-        e.rotation.y += 0.01;
-
-        if(e.position.z > 10){
-
-            alert("Game Over");
-
-            location.reload();
-
-        }
-
-        bullets.forEach((b,bi)=>{
-
-            let dist = b.position.distanceTo(e.position);
-
-            if(dist < 1.5){
-
-                scene.remove(e);
-
-                scene.remove(b);
-
-                enemies.splice(ei,1);
-
-                bullets.splice(bi,1);
-
-                kills++;
-
-                document.getElementById("hud").innerText =
-                "Kills: " + kills;
-
-            }
-
-        });
-
-    });
-
-    renderer.render(scene,camera);
+    }
 
 }
-
-animate();
 
 </script>
 
