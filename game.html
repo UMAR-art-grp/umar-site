@@ -3,32 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mobile Shooting Game</title>
-  
+<title>Battle Royale Mobile Game</title>
+
 <style>
- 
+
 body{
     margin:0;
     overflow:hidden;
-    background:#000;
+    background:#111;
     font-family:Arial;
 }
 
 canvas{
     display:block;
-    background:linear-gradient(#111,#000);
+    background:#1b1b1b;
 }
 
 #score{
     position:absolute;
-    top:15px;
-    left:15px;
+    top:10px;
+    left:10px;
     color:white;
-    font-size:24px;
+    font-size:22px;
     z-index:10;
 }
 
-#gameOver{
+#gameover{
     position:absolute;
     top:50%;
     left:50%;
@@ -41,10 +41,10 @@ canvas{
 button{
     padding:12px 25px;
     border:none;
-    background:#00ffcc;
-    color:black;
-    font-size:18px;
     border-radius:10px;
+    background:#00ff99;
+    font-size:18px;
+    font-weight:bold;
 }
 
 </style>
@@ -52,9 +52,9 @@ button{
 
 <body>
 
-<div id="score">Score: 0</div>
+<div id="score">Kills: 0</div>
 
-<div id="gameOver">
+<div id="gameover">
     <h1>Game Over</h1>
     <button onclick="location.reload()">Restart</button>
 </div>
@@ -69,83 +69,135 @@ const ctx = canvas.getContext("2d");
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
-let score = 0;
+let kills = 0;
 
 const player = {
     x: canvas.width/2,
-    y: canvas.height-100,
-    size: 30,
-    color: "#00ffcc"
+    y: canvas.height/2,
+    size: 22,
+    color:"#00ff99",
+    speed:5,
+    health:100
 };
 
 let bullets = [];
 let enemies = [];
 
 function drawPlayer(){
+
     ctx.fillStyle = player.color;
+
     ctx.beginPath();
-    ctx.arc(player.x, player.y, player.size, 0, Math.PI*2);
+    ctx.arc(player.x,player.y,player.size,0,Math.PI*2);
     ctx.fill();
+
 }
 
 function drawBullets(){
-    ctx.fillStyle = "yellow";
-    bullets.forEach((b,i)=>{
-        b.y -= 10;
-        ctx.fillRect(b.x,b.y,5,15);
 
-        if(b.y<0){
+    ctx.fillStyle = "yellow";
+
+    bullets.forEach((b,i)=>{
+
+        b.x += b.dx;
+        b.y += b.dy;
+
+        ctx.fillRect(b.x,b.y,8,8);
+
+        if(
+            b.x < 0 ||
+            b.x > canvas.width ||
+            b.y < 0 ||
+            b.y > canvas.height
+        ){
             bullets.splice(i,1);
         }
-    });
-}
-
-function drawEnemies(){
-    ctx.fillStyle = "red";
-
-    enemies.forEach((e,ei)=>{
-
-        e.y += e.speed;
-
-        ctx.beginPath();
-        ctx.arc(e.x,e.y,e.size,0,Math.PI*2);
-        ctx.fill();
-
-        if(e.y > canvas.height){
-            document.getElementById("gameOver").style.display="block";
-        }
-
-        bullets.forEach((b,bi)=>{
-
-            let dx = e.x - b.x;
-            let dy = e.y - b.y;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-
-            if(dist < e.size){
-                enemies.splice(ei,1);
-                bullets.splice(bi,1);
-
-                score++;
-                document.getElementById("score").innerText = "Score: " + score;
-            }
-
-        });
 
     });
+
 }
 
 function spawnEnemy(){
 
+    let side = Math.floor(Math.random()*4);
+
+    let x,y;
+
+    if(side===0){
+        x=0;
+        y=Math.random()*canvas.height;
+    }
+
+    if(side===1){
+        x=canvas.width;
+        y=Math.random()*canvas.height;
+    }
+
+    if(side===2){
+        x=Math.random()*canvas.width;
+        y=0;
+    }
+
+    if(side===3){
+        x=Math.random()*canvas.width;
+        y=canvas.height;
+    }
+
     enemies.push({
-        x: Math.random()*canvas.width,
-        y: -20,
-        size: 20 + Math.random()*15,
-        speed: 2 + Math.random()*3
+        x,
+        y,
+        size:20,
+        speed:1.5 + Math.random()*2
     });
 
 }
 
 setInterval(spawnEnemy,1000);
+
+function drawEnemies(){
+
+    ctx.fillStyle = "red";
+
+    enemies.forEach((e,ei)=>{
+
+        let angle = Math.atan2(player.y-e.y, player.x-e.x);
+
+        e.x += Math.cos(angle)*e.speed;
+        e.y += Math.sin(angle)*e.speed;
+
+        ctx.beginPath();
+        ctx.arc(e.x,e.y,e.size,0,Math.PI*2);
+        ctx.fill();
+
+        let distPlayer = Math.hypot(player.x-e.x, player.y-e.y);
+
+        if(distPlayer < player.size + e.size){
+
+            document.getElementById("gameover").style.display="block";
+
+        }
+
+        bullets.forEach((b,bi)=>{
+
+            let dist = Math.hypot(b.x-e.x, b.y-e.y);
+
+            if(dist < e.size){
+
+                enemies.splice(ei,1);
+                bullets.splice(bi,1);
+
+                kills++;
+
+                document.getElementById("score").innerText =
+                "Kills: " + kills;
+
+            }
+
+        });
+
+    });
+
+}
 
 function animate(){
 
@@ -164,14 +216,25 @@ animate();
 canvas.addEventListener("touchmove",(e)=>{
 
     player.x = e.touches[0].clientX;
+    player.y = e.touches[0].clientY;
 
 });
 
-canvas.addEventListener("touchstart",()=>{
+canvas.addEventListener("touchstart",(e)=>{
+
+    let touchX = e.touches[0].clientX;
+    let touchY = e.touches[0].clientY;
+
+    let angle = Math.atan2(
+        touchY-player.y,
+        touchX-player.x
+    );
 
     bullets.push({
-        x: player.x,
-        y: player.y
+        x:player.x,
+        y:player.y,
+        dx:Math.cos(angle)*8,
+        dy:Math.sin(angle)*8
     });
 
 });
