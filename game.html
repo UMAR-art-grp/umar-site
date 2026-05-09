@@ -1,312 +1,175 @@
+# Real 3D Car Game Code
+
+Save this file as `index.html`
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Car For Sale Simulator</title>
-
+<title>3D Car Game</title>
 <style>
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial;
-}
-
 body{
+margin:0;
 overflow:hidden;
-background:#87ceeb;
+background:black;
 }
 
-#game{
-width:100vw;
-height:100vh;
-position:relative;
-overflow:hidden;
-background:linear-gradient(#6ec6ff,#8bd66b);
-}
-
-.sky{
-position:absolute;
-width:100%;
-height:70%;
-background:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1400&auto=format&fit=crop');
-background-size:cover;
-background-position:center;
-}
-
-.road{
-position:absolute;
-bottom:0;
-width:100%;
-height:30%;
-background:#2f2f2f;
-}
-
-.line{
-position:absolute;
-top:50%;
-width:140px;
-height:10px;
-background:white;
-animation:moveRoad 1s linear infinite;
-}
-
-.line:nth-child(1){left:0px;}
-.line:nth-child(2){left:220px;}
-.line:nth-child(3){left:440px;}
-.line:nth-child(4){left:660px;}
-.line:nth-child(5){left:880px;}
-.line:nth-child(6){left:1100px;}
-
-@keyframes moveRoad{
-0%{transform:translateX(0);}
-100%{transform:translateX(-220px);}
-}
-
-.car{
-position:absolute;
-bottom:70px;
-left:120px;
-width:220px;
-transition:0.1s;
-}
-
-.enemy{
-position:absolute;
-bottom:70px;
-right:-300px;
-width:220px;
-}
-
-.title{
+#info{
 position:absolute;
 top:20px;
 left:20px;
-font-size:55px;
-font-weight:bold;
 color:white;
-text-shadow:3px 3px 10px black;
-}
-
-.score{
-position:absolute;
-top:100px;
-left:25px;
-font-size:35px;
-color:yellow;
-font-weight:bold;
-text-shadow:2px 2px 10px black;
-}
-
-.gameover{
-position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
-font-size:70px;
-font-weight:bold;
-color:white;
-display:none;
-text-align:center;
-text-shadow:4px 4px 10px black;
-}
-
-.restart{
-padding:15px 40px;
 font-size:30px;
-margin-top:20px;
-border:none;
-border-radius:10px;
-cursor:pointer;
+font-family:Arial;
+z-index:100;
 }
 
-.controls{
+button{
 position:absolute;
-bottom:10px;
-width:100%;
-display:flex;
-justify-content:center;
-gap:30px;
-}
-
-.btn{
-width:90px;
-height:90px;
+bottom:20px;
+width:80px;
+height:80px;
 font-size:40px;
 border:none;
 border-radius:50%;
-background:white;
-box-shadow:0 0 15px black;
+z-index:100;
 }
 
-@media(max-width:700px){
-
-.car,.enemy{
-width:150px;
+#left{
+left:20px;
 }
 
-.title{
-font-size:35px;
+#right{
+right:20px;
 }
-
-.score{
-font-size:25px;
-}
-
-.btn{
-width:70px;
-height:70px;
-}
-
-}
-
 </style>
 </head>
-
 <body>
 
-<div id="game">
+<div id="info">3D CAR GAME</div>
 
-<div class="sky"></div>
+<button id="left">⬅</button>
+<button id="right">➡</button>
 
-<div class="title">CAR FOR SALE</div>
-
-<div class="score">
-Money: $<span id="score">0</span>
-</div>
-
-<img class="car" id="player"
-src="https://pngimg.com/uploads/porsche/porsche_PNG10627.png">
-
-<img class="enemy" id="enemy"
-src="https://pngimg.com/uploads/bmw/bmw_PNG1711.png">
-
-<div class="road">
-
-<div class="line"></div>
-<div class="line"></div>
-<div class="line"></div>
-<div class="line"></div>
-<div class="line"></div>
-<div class="line"></div>
-
-</div>
-
-<div class="controls">
-
-<button class="btn" onclick="left()">⬅</button>
-
-<button class="btn" onclick="right()">➡</button>
-
-</div>
-
-<div class="gameover" id="gameover">
-
-CRASHED!
-
-<br>
-
-<button class="restart" onclick="location.reload()">
-RESTART
-</button>
-
-</div>
-
-</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 
 <script>
 
-let player=document.getElementById("player");
-let enemy=document.getElementById("enemy");
-let score=document.getElementById("score");
-let gameover=document.getElementById("gameover");
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
 
-let playerX=120;
-let enemyX=window.innerWidth+200;
+const camera = new THREE.PerspectiveCamera(
+75,
+window.innerWidth/window.innerHeight,
+0.1,
+1000
+);
 
-let points=0;
-let speed=12;
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-function left(){
+const light = new THREE.DirectionalLight(0xffffff,1);
+light.position.set(0,10,10);
+scene.add(light);
 
-if(playerX>0){
+const ambient = new THREE.AmbientLight(0xffffff,0.6);
+scene.add(ambient);
 
-playerX-=45;
+const roadGeometry = new THREE.BoxGeometry(12,0.1,200);
+const roadMaterial = new THREE.MeshStandardMaterial({color:0x333333});
+const road = new THREE.Mesh(roadGeometry,roadMaterial);
+scene.add(road);
 
-player.style.left=playerX+"px";
+const lineGeometry = new THREE.BoxGeometry(0.3,0.05,4);
+const lineMaterial = new THREE.MeshStandardMaterial({color:0xffffff});
 
+for(let i=-90;i<100;i+=10){
+const line = new THREE.Mesh(lineGeometry,lineMaterial);
+line.position.z=i;
+line.position.y=0.06;
+scene.add(line);
 }
 
+const playerGeometry = new THREE.BoxGeometry(1.5,1,3);
+const playerMaterial = new THREE.MeshStandardMaterial({color:0xff0000});
+const player = new THREE.Mesh(playerGeometry,playerMaterial);
+player.position.y=0.7;
+player.position.z=20;
+scene.add(player);
+
+const enemyGeometry = new THREE.BoxGeometry(1.5,1,3);
+const enemyMaterial = new THREE.MeshStandardMaterial({color:0x0000ff});
+const enemy = new THREE.Mesh(enemyGeometry,enemyMaterial);
+enemy.position.y=0.7;
+enemy.position.z=-40;
+scene.add(enemy);
+
+camera.position.set(0,6,28);
+camera.rotation.x=-0.2;
+
+let speed=0.6;
+
+function moveLeft(){
+if(player.position.x>-4){
+player.position.x-=1;
+}
 }
 
-function right(){
-
-if(playerX<window.innerWidth-220){
-
-playerX+=45;
-
-player.style.left=playerX+"px";
-
+function moveRight(){
+if(player.position.x<4){
+player.position.x+=1;
+}
 }
 
-}
+document.getElementById('left').onclick=moveLeft;
+document.getElementById('right').onclick=moveRight;
 
-document.addEventListener("keydown",(e)=>{
-
-if(e.key==="ArrowLeft") left();
-
-if(e.key==="ArrowRight") right();
-
+window.addEventListener('keydown',(e)=>{
+if(e.key==='ArrowLeft') moveLeft();
+if(e.key==='ArrowRight') moveRight();
 });
 
-function loop(){
+function animate(){
+requestAnimationFrame(animate);
 
-enemyX-=speed;
+enemy.position.z += speed;
 
-enemy.style.left=enemyX+"px";
-
-if(enemyX<-300){
-
-enemyX=window.innerWidth+300;
-
-points+=100;
-
-score.innerHTML=points;
-
-speed+=0.3;
-
-enemy.style.bottom=(60+Math.random()*40)+"px";
-
+if(enemy.position.z>30){
+enemy.position.z=-50;
+enemy.position.x=(Math.random()*8)-4;
 }
-
-let p=player.getBoundingClientRect();
-
-let e=enemy.getBoundingClientRect();
 
 if(
-
-p.left<e.right &&
-p.right>e.left &&
-p.top<e.bottom &&
-p.bottom>e.top
-
+Math.abs(player.position.x-enemy.position.x)<1.5 &&
+Math.abs(player.position.z-enemy.position.z)<2
 ){
-
-gameover.style.display="block";
-
-return;
-
+alert('Game Over');
+location.reload();
 }
 
-requestAnimationFrame(loop);
-
+renderer.render(scene,camera);
 }
 
-loop();
+animate();
+
+window.addEventListener('resize',()=>{
+camera.aspect=window.innerWidth/window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth,window.innerHeight);
+});
 
 </script>
 
 </body>
 </html>
+```
+
+## Upload Steps
+
+1. Save file as `index.html`
+2. Upload to GitHub or Netlify
+3. Open live link
+4. Game will work on mobile and PC
