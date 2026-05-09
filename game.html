@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Car For Sale Game</title>
+<title>Car For Sale Simulator</title>
 
 <style>
-*{ 
+
+*{
 margin:0;
 padding:0;
 box-sizing:border-box;
@@ -15,7 +16,7 @@ font-family:Arial;
 
 body{
 overflow:hidden;
-background:#6ec6ff;
+background:#87ceeb;
 }
 
 #game{
@@ -23,182 +24,194 @@ width:100vw;
 height:100vh;
 position:relative;
 overflow:hidden;
-background:linear-gradient(#6ec6ff,#9be15d);
+background:linear-gradient(#6ec6ff,#8bd66b);
+}
+
+.sky{
+position:absolute;
+width:100%;
+height:70%;
+background:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1400&auto=format&fit=crop');
+background-size:cover;
+background-position:center;
 }
 
 .road{
 position:absolute;
 bottom:0;
 width:100%;
-height:220px;
-background:#333;
+height:30%;
+background:#2f2f2f;
 }
 
 .line{
 position:absolute;
-width:120px;
+top:50%;
+width:140px;
 height:10px;
 background:white;
-top:50%;
-animation:road 1s linear infinite;
+animation:moveRoad 1s linear infinite;
 }
 
-.line:nth-child(1){left:0;}
-.line:nth-child(2){left:200px;}
-.line:nth-child(3){left:400px;}
-.line:nth-child(4){left:600px;}
-.line:nth-child(5){left:800px;}
-.line:nth-child(6){left:1000px;}
+.line:nth-child(1){left:0px;}
+.line:nth-child(2){left:220px;}
+.line:nth-child(3){left:440px;}
+.line:nth-child(4){left:660px;}
+.line:nth-child(5){left:880px;}
+.line:nth-child(6){left:1100px;}
 
-@keyframes road{
+@keyframes moveRoad{
 0%{transform:translateX(0);}
-100%{transform:translateX(-200px);}
+100%{transform:translateX(-220px);}
 }
 
-.player{
-width:120px;
-height:60px;
-background:red;
+.car{
 position:absolute;
-bottom:90px;
-left:200px;
-border-radius:20px;
-box-shadow:0 0 20px rgba(0,0,0,0.5);
+bottom:70px;
+left:120px;
+width:220px;
+transition:0.1s;
 }
-
-.player::before{
-content:'';
-position:absolute;
-width:80px;
-height:35px;
-background:#b30000;
-top:-25px;
-left:20px;
-border-radius:15px;
-}
-
-.wheel{
-width:30px;
-height:30px;
-background:black;
-border-radius:50%;
-position:absolute;
-bottom:-15px;
-}
-
-.w1{left:10px;}
-.w2{right:10px;}
 
 .enemy{
-width:120px;
-height:60px;
-background:blue;
 position:absolute;
-bottom:90px;
-right:-150px;
-border-radius:20px;
-}
-
-.enemy::before{
-content:'';
-position:absolute;
-width:80px;
-height:35px;
-background:#0033cc;
-top:-25px;
-left:20px;
-border-radius:15px;
-}
-
-.score{
-position:absolute;
-top:20px;
-left:20px;
-font-size:35px;
-color:white;
-font-weight:bold;
-text-shadow:2px 2px 5px black;
+bottom:70px;
+right:-300px;
+width:220px;
 }
 
 .title{
 position:absolute;
 top:20px;
-right:20px;
-font-size:40px;
+left:20px;
+font-size:55px;
 font-weight:bold;
+color:white;
+text-shadow:3px 3px 10px black;
+}
+
+.score{
+position:absolute;
+top:100px;
+left:25px;
+font-size:35px;
 color:yellow;
-text-shadow:2px 2px 5px black;
+font-weight:bold;
+text-shadow:2px 2px 10px black;
+}
+
+.gameover{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+font-size:70px;
+font-weight:bold;
+color:white;
+display:none;
+text-align:center;
+text-shadow:4px 4px 10px black;
+}
+
+.restart{
+padding:15px 40px;
+font-size:30px;
+margin-top:20px;
+border:none;
+border-radius:10px;
+cursor:pointer;
 }
 
 .controls{
 position:absolute;
-bottom:20px;
+bottom:10px;
 width:100%;
 display:flex;
 justify-content:center;
-gap:20px;
+gap:30px;
 }
 
 .btn{
 width:90px;
 height:90px;
+font-size:40px;
 border:none;
 border-radius:50%;
-font-size:40px;
 background:white;
-box-shadow:0 0 10px black;
+box-shadow:0 0 15px black;
 }
 
-.gameover{
-position:absolute;
-top:40%;
-left:50%;
-transform:translate(-50%,-50%);
-font-size:60px;
-color:white;
-display:none;
-text-align:center;
-text-shadow:3px 3px 10px black;
+@media(max-width:700px){
+
+.car,.enemy{
+width:150px;
 }
+
+.title{
+font-size:35px;
+}
+
+.score{
+font-size:25px;
+}
+
+.btn{
+width:70px;
+height:70px;
+}
+
+}
+
 </style>
 </head>
+
 <body>
 
 <div id="game">
 
-<div class="score">Score: <span id="score">0</span></div>
+<div class="sky"></div>
 
 <div class="title">CAR FOR SALE</div>
 
-<div class="player" id="player">
-<div class="wheel w1"></div>
-<div class="wheel w2"></div>
+<div class="score">
+Money: $<span id="score">0</span>
 </div>
 
-<div class="enemy" id="enemy">
-<div class="wheel w1"></div>
-<div class="wheel w2"></div>
-</div>
+<img class="car" id="player"
+src="https://pngimg.com/uploads/porsche/porsche_PNG10627.png">
+
+<img class="enemy" id="enemy"
+src="https://pngimg.com/uploads/bmw/bmw_PNG1711.png">
 
 <div class="road">
+
 <div class="line"></div>
 <div class="line"></div>
 <div class="line"></div>
 <div class="line"></div>
 <div class="line"></div>
 <div class="line"></div>
+
 </div>
 
 <div class="controls">
-<button class="btn" onclick="moveLeft()">⬅</button>
-<button class="btn" onclick="moveRight()">➡</button>
+
+<button class="btn" onclick="left()">⬅</button>
+
+<button class="btn" onclick="right()">➡</button>
+
 </div>
 
 <div class="gameover" id="gameover">
-GAME OVER<br>
-<button onclick="location.reload()" style="padding:15px 30px;font-size:25px;margin-top:20px;">
-Restart
+
+CRASHED!
+
+<br>
+
+<button class="restart" onclick="location.reload()">
+RESTART
 </button>
+
 </div>
 
 </div>
@@ -210,61 +223,88 @@ let enemy=document.getElementById("enemy");
 let score=document.getElementById("score");
 let gameover=document.getElementById("gameover");
 
-let playerX=200;
-let enemyX=window.innerWidth;
+let playerX=120;
+let enemyX=window.innerWidth+200;
+
 let points=0;
+let speed=12;
 
-function moveLeft(){
-if(playerX>20){
-playerX-=40;
+function left(){
+
+if(playerX>0){
+
+playerX-=45;
+
 player.style.left=playerX+"px";
-}
+
 }
 
-function moveRight(){
-if(playerX<window.innerWidth-150){
-playerX+=40;
-player.style.left=playerX+"px";
 }
+
+function right(){
+
+if(playerX<window.innerWidth-220){
+
+playerX+=45;
+
+player.style.left=playerX+"px";
+
+}
+
 }
 
 document.addEventListener("keydown",(e)=>{
-if(e.key==="ArrowLeft") moveLeft();
-if(e.key==="ArrowRight") moveRight();
+
+if(e.key==="ArrowLeft") left();
+
+if(e.key==="ArrowRight") right();
+
 });
 
-function gameLoop(){
+function loop(){
 
-enemyX-=12;
-
-if(enemyX<-150){
-enemyX=window.innerWidth;
-points++;
-score.innerHTML=points;
-
-enemy.style.background=
-"#"+Math.floor(Math.random()*16777215).toString(16);
-}
+enemyX-=speed;
 
 enemy.style.left=enemyX+"px";
 
-let playerRect=player.getBoundingClientRect();
-let enemyRect=enemy.getBoundingClientRect();
+if(enemyX<-300){
+
+enemyX=window.innerWidth+300;
+
+points+=100;
+
+score.innerHTML=points;
+
+speed+=0.3;
+
+enemy.style.bottom=(60+Math.random()*40)+"px";
+
+}
+
+let p=player.getBoundingClientRect();
+
+let e=enemy.getBoundingClientRect();
 
 if(
-playerRect.left<enemyRect.right &&
-playerRect.right>enemyRect.left &&
-playerRect.top<enemyRect.bottom &&
-playerRect.bottom>enemyRect.top
+
+p.left<e.right &&
+p.right>e.left &&
+p.top<e.bottom &&
+p.bottom>e.top
+
 ){
+
 gameover.style.display="block";
+
 return;
+
 }
 
-requestAnimationFrame(gameLoop);
+requestAnimationFrame(loop);
+
 }
 
-gameLoop();
+loop();
 
 </script>
 
